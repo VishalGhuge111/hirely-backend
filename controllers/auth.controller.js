@@ -1,9 +1,7 @@
 const User = require("../models/User");
 const generateToken = require("../utils/generateToken");
 
-/* ============================
-   REGISTER
-============================ */
+// ================= REGISTER =================
 exports.registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -33,20 +31,18 @@ exports.registerUser = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
-      }
+        role: user.role,
+        mobile: user.mobile,
+        linkedin: user.linkedin,
+      },
     });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: error.message });
   }
 };
 
-
-/* ============================
-   LOGIN
-============================ */
+// ================= LOGIN =================
 exports.loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -60,70 +56,57 @@ exports.loginUser = async (req, res) => {
           id: user._id,
           name: user.name,
           email: user.email,
-          role: user.role
-        }
+          role: user.role,
+          mobile: user.mobile,
+          linkedin: user.linkedin,
+        },
       });
     } else {
       res.status(401).json({ message: "Invalid credentials" });
     }
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: error.message });
   }
 };
 
-
-/* ============================
-   UPDATE PROFILE
-   (Name + Mobile + LinkedIn)
-============================ */
+// ================= UPDATE PROFILE =================
 exports.updateProfile = async (req, res) => {
   try {
     const { name, mobile, linkedin } = req.body;
 
-    const user = await User.findById(req.user._id);
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        name,
+        mobile,
+        linkedin,
+      },
+      { new: true }
+    );
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    if (name !== undefined) user.name = name;
-    if (mobile !== undefined) user.mobile = mobile;
-    if (linkedin !== undefined) user.linkedin = linkedin;
-
-    await user.save();
-
-    // Return FULL updated user
     res.json({
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      mobile: user.mobile,
-      linkedin: user.linkedin,
-      role: user.role
+      token: generateToken(user._id),
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        mobile: user.mobile,
+        linkedin: user.linkedin,
+      },
     });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: error.message });
   }
 };
 
-
-/* ============================
-   DELETE PROFILE
-============================ */
+// ================= DELETE PROFILE =================
 exports.deleteProfile = async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.user._id);
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
+    await User.findByIdAndDelete(req.user._id);
     res.json({ message: "Profile deleted successfully" });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: error.message });
