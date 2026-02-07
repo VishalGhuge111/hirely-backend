@@ -6,23 +6,36 @@ const protect = async (req, res, next) => {
 
   if (
     req.headers.authorization &&
-    req.headers.authorization.startsWith("Bearer")
+    req.headers.authorization.startsWith("Bearer ")
   ) {
     try {
       token = req.headers.authorization.split(" ")[1];
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      req.user = await User.findById(decoded.id).select("-password");
+      const user = await User.findById(decoded.id).select("-password");
 
+      // 🔴 USER DELETED OR NOT FOUND
+      if (!user) {
+        return res.status(401).json({
+          message: "Account no longer exists. Please login again.",
+          code: "USER_DELETED",
+        });
+      }
+
+      req.user = user;
       next();
     } catch (error) {
-      return res.status(401).json({ message: "Not authorized" });
+      return res.status(401).json({
+        message: "Session expired or invalid token. Please login again.",
+        code: "INVALID_TOKEN",
+      });
     }
-  }
-
-  if (!token) {
-    return res.status(401).json({ message: "No token" });
+  } else {
+    return res.status(401).json({
+      message: "No token provided",
+      code: "NO_TOKEN",
+    });
   }
 };
 
